@@ -10,15 +10,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
+            --primary-color: #0A66C2; /* corporate blue */
+            --secondary-color: #084B9A; /* darker blue for hovers */
+            --success-color: #198754;
+            --warning-color: #FFC107;
+            --danger-color: #DC3545;
+            --surface-bg: #ffffff;
+            --muted-bg: #f5f7fb;
+            --border-color: #e9ecef;
         }
         
         body {
-            background-color: #f8f9fa;
+            background-color: var(--surface-bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
@@ -29,8 +32,8 @@
         
         .sidebar {
             min-height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            background-color: var(--primary-color);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.06);
         }
         
         .sidebar .nav-link {
@@ -64,24 +67,24 @@
         }
         
         .card-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background-color: var(--primary-color);
             color: white;
             border-radius: 15px 15px 0 0 !important;
-            padding: 20px;
+            padding: 16px 20px;
             border: none;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, var(--secondary-color), #5dade2);
+            background-color: var(--primary-color);
             border: none;
             border-radius: 8px;
             padding: 10px 20px;
-            transition: all 0.3s ease;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
         }
         
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            background-color: var(--secondary-color);
+            box-shadow: 0 3px 10px rgba(10, 102, 194, 0.25);
         }
         
         .table {
@@ -97,17 +100,17 @@
         }
         
         .table tbody tr:hover {
-            background-color: #f8f9fa;
-            transform: scale(1.01);
-            transition: all 0.2s ease;
+            background-color: var(--muted-bg);
+            transition: background-color 0.2s ease;
         }
         
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 25px;
+            background: var(--surface-bg);
+            color: #0f172a;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
         
         .stats-number {
@@ -117,31 +120,32 @@
         
         .login-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background-color: var(--muted-bg);
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 24px;
         }
         
         .login-card {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
             max-width: 400px;
             width: 100%;
         }
         
         .form-control {
             border-radius: 8px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
             padding: 12px 15px;
             transition: all 0.3s ease;
         }
         
         .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(10, 102, 194, 0.2);
         }
         
         .analytics-chart {
@@ -176,6 +180,19 @@
         .role-supervisor { background-color: #e74c3c; }
         .role-welder { background-color: #f39c12; }
         .role-parking { background-color: #9b59b6; }
+        
+        /* Navbar */
+        .app-navbar {
+            background-color: var(--primary-color) !important;
+        }
+
+        /* Mobile refinements */
+        @media (max-width: 767.98px) {
+            .main-content { padding: 20px; }
+            .sidebar { min-height: auto; }
+            .navbar .navbar-text { display: none; }
+            .card { border-radius: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -221,7 +238,7 @@
 
     <!-- Vendor Portal -->
     <div id="vendorPortal" class="hidden">
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+        <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
             <div class="container-fluid">
                 <span class="navbar-brand">
                     <i class="fas fa-users-cog"></i> Trivanta - Vendor Portal
@@ -271,13 +288,13 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                <div class="stats-card">
                                     <div class="stats-number" id="vendorSelectedCandidates">0</div>
                                     <div>Selected Candidates</div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                                <div class="stats-card">
                                     <div class="stats-number" id="vendorPendingCandidates">0</div>
                                     <div>Pending Interviews</div>
                                 </div>
@@ -405,7 +422,7 @@
 
     <!-- Admin Portal -->
     <div id="adminPortal" class="hidden">
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+        <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
             <div class="container-fluid">
                 <span class="navbar-brand">
                     <i class="fas fa-users-cog"></i> Trivanta - Admin Portal
@@ -644,19 +661,19 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                <div class="stats-card">
                                     <div class="stats-number" id="adminSelectedCandidates">0</div>
                                     <div>Selected</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                                <div class="stats-card">
                                     <div class="stats-number" id="adminActiveVendors">0</div>
                                     <div>Active Vendors</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                                <div class="stats-card">
                                     <div class="stats-number" id="adminPendingInterviews">0</div>
                                     <div>Pending Interviews</div>
                                 </div>
