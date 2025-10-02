@@ -19,36 +19,24 @@ const storage = firebase.storage();
 
 // --- 2. AUTHENTICATION (Shared Logic) ---
 
-// Placeholder for Admin/Vendor Emails for demo purposes
-// In a real system, use Firebase Custom Claims or a separate user collection.
-const ADMIN_EMAIL = 'admin@trivanta.com';
-const VENDOR_PREFIX = 'vendor'; // E.g., 'vendor1@trivanta.com'
+// UPDATE THESE CONSTANTS
+const ADMIN_EMAIL = 'siddhant@trivantaedge.com'; 
+const VENDOR_PREFIX = 'trivantaedge.com'; // Use a domain part or keyword if vendors might have unique names
+                                          // Using the domain part (trivantaedge.com) is safer 
+                                          // to check all vendors in this project.
+                                          
+// The Vendor detection logic will now be: 
+// if (user.email.includes(VENDOR_PREFIX)) { ... } 
+// If you prefer to stick to 'vendor' in the email, you must ensure all vendor emails contain 'vendor'.
 
-async function handleLogin(email, password) {
-    try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        if (user.email === ADMIN_EMAIL) {
-            window.location.href = 'admin.html';
-        } else if (user.email.includes(VENDOR_PREFIX)) {
-            window.location.href = 'vendor.html';
-        } else {
-            alert('Access Denied. Unknown user role.');
-            auth.signOut();
-        }
-    } catch (error) {
-        alert(`Login Failed: ${error.message}`);
-    }
+function getVendorName(user) {
+    if (!user) return "N/A";
+    if (user.email === ADMIN_EMAIL) return "Admin";
+    // For a complex vendor email like markethrsolutions@trivantaedge.com, 
+    // we can use the part before the @ as the display name.
+    return user.email.split('@')[0].replace('markethrsolutions', 'Market HR Solutions');
 }
 
-function handleLogout() {
-    auth.signOut().then(() => {
-        window.location.href = 'index.html';
-    }).catch((error) => {
-        console.error("Logout Error:", error);
-    });
-}
 
 // --- 3. VENDOR PORTAL LOGIC ---
 
