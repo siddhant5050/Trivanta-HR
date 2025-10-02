@@ -1,4 +1,36 @@
-// Firebase configuration and initialization
+// Add this with your other imports at the top
+import { 
+    getAuth, 
+    signInWithEmailAndPassword 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// After your other initializations
+const auth = getAuth(app);
+
+// Add this method to your FirebaseService class
+static async signIn(username, password) {
+    try {
+        // First check if it's an admin
+        if (username === 'Siddhant' && password === '102005') {
+            return { success: true, type: 'admin' };
+        }
+
+        // For vendors, first check if vendor exists
+        const vendor = await this.getVendorByCredentials(username, password);
+        if (vendor) {
+            return { 
+                success: true, 
+                type: 'vendor',
+                vendorData: vendor 
+            };
+        }
+
+        return { success: false, error: 'Invalid credentials' };
+    } catch (error) {
+        console.error('Error during sign in:', error);
+        return { success: false, error: error.message };
+    }
+}// Firebase configuration and initialization
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getFirestore, 
