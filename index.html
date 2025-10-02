@@ -562,4 +562,80 @@
                                             <label class="form-label">Date of Selection</label>
                                             <input type="date" name="selectionDate" class="form-control">
                                         </div>
-                                        <div
+                                        <div<script>
+// Handle login form submission
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Prevent form from submitting normally
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const userType = document.getElementById('userType').value;
+    const loginError = document.getElementById('loginError');
+    const loginButton = document.getElementById('loginButton');
+    const loginButtonText = document.getElementById('loginButtonText');
+    const loginButtonSpinner = document.getElementById('loginButtonSpinner');
+
+    // Show loading state
+    loginButton.disabled = true;
+    loginButtonText.classList.add('hidden');
+    loginButtonSpinner.classList.remove('hidden');
+    loginError.classList.add('hidden');
+
+    try {
+        const result = await FirebaseService.signIn(username, password);
+        
+        if (result.success) {
+            // Check if user type matches
+            if (
+                (userType === 'admin' && result.type === 'admin') ||
+                (userType === 'vendor' && result.type === 'vendor')
+            ) {
+                // Store vendor data if needed
+                if (result.type === 'vendor') {
+                    localStorage.setItem('vendorData', JSON.stringify(result.vendorData));
+                }
+                
+                // Show appropriate portal
+                document.getElementById('loginContainer').classList.add('hidden');
+                if (result.type === 'vendor') {
+                    document.getElementById('vendorPortal').classList.remove('hidden');
+                    document.getElementById('vendorName').textContent = result.vendorData.name;
+                } else {
+                    document.getElementById('adminPortal').classList.remove('hidden');
+                }
+            } else {
+                loginError.textContent = 'Invalid portal selection for this user';
+                loginError.classList.remove('hidden');
+            }
+        } else {
+            loginError.textContent = result.error || 'Invalid credentials';
+            loginError.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = 'An error occurred during login';
+        loginError.classList.remove('hidden');
+    } finally {
+        // Reset button state
+        loginButton.disabled = false;
+        loginButtonText.classList.remove('hidden');
+        loginButtonSpinner.classList.add('hidden');
+    }
+});
+
+// Add logout function
+window.logout = function() {
+    // Clear any stored data
+    localStorage.removeItem('vendorData');
+    
+    // Hide portals
+    document.getElementById('vendorPortal').classList.add('hidden');
+    document.getElementById('adminPortal').classList.add('hidden');
+    
+    // Show login
+    document.getElementById('loginContainer').classList.remove('hidden');
+    
+    // Reset form
+    document.getElementById('loginForm').reset();
+}
+                                        </script>
