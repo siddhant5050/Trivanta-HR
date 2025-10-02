@@ -19,39 +19,61 @@ const storage = firebase.storage();
 
 // --- 2. AUTHENTICATION (Shared Logic) ---
 
-// UPDATE THESE CONSTANTS
+// Updated to use your specific user emails
 const ADMIN_EMAIL = 'siddhant@trivantaedge.com'; 
-const VENDOR_PREFIX = 'trivantaedge.com'; // Use a domain part or keyword if vendors might have unique names
-                                          // Using the domain part (trivantaedge.com) is safer 
-                                          // to check all vendors in this project.
-                                          
-// The Vendor detection logic will now be: 
-// if (user.email.includes(VENDOR_PREFIX)) { ... } 
-// If you prefer to stick to 'vendor' in the email, you must ensure all vendor emails contain 'vendor'.
+const VENDOR_DOMAIN = 'trivantaedge.com'; // Use the domain for broad vendor check
 
+// Function to handle login process
+async function handleLogin(email, password) {
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        // Check user role and redirect
+        if (user.email === ADMIN_EMAIL) {
+            window.location.href = 'admin.html';
+        } else if (user.email.includes(VENDOR_DOMAIN)) {
+            window.location.href = 'vendor.html';
+        } else {
+            alert('Access Denied. Unknown user role.');
+            auth.signOut();
+        }
+    } catch (error) {
+        // This will display the Firebase error message (e.g., auth/user-not-found)
+        alert(`Login Failed: ${error.message}`);
+        console.error("Login Error:", error);
+    }
+}
+
+function handleLogout() {
+    auth.signOut().then(() => {
+        window.location.href = 'index.html';
+    }).catch((error) => {
+        console.error("Logout Error:", error);
+    });
+}
+
+// Function to get the display name of the vendor (USED BY BOTH PORTALS)
 function getVendorName(user) {
     if (!user) return "N/A";
     if (user.email === ADMIN_EMAIL) return "Admin";
-    // For a complex vendor email like markethrsolutions@trivantaedge.com, 
-    // we can use the part before the @ as the display name.
-    return user.email.split('@')[0].replace('markethrsolutions', 'Market HR Solutions');
+    
+    // Logic to convert vendor email to a professional display name
+    const emailPrefix = user.email.split('@')[0];
+    if (emailPrefix === 'markethrsolutions') {
+        return 'Market HR Solutions';
+    }
+    // Fallback for other vendors
+    return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1).replace(/(\d+)/g, ' $1');
 }
 
 
 // --- 3. VENDOR PORTAL LOGIC ---
 
-// Get current vendor name from auth (simplified)
-function getVendorName(user) {
-    if (!user) return "N/A";
-    if (user.email === ADMIN_EMAIL) return "Admin";
-    // Example: converts vendor1@trivanta.com to 'Vendor 1'
-    return user.email.split('@')[0].replace('vendor', 'Vendor ');
-}
-
 // Attach listener to check auth state and load Vendor data
 auth.onAuthStateChanged(user => {
     if (document.getElementById('vendor-portal')) {
-        if (user && user.email.includes(VENDOR_PREFIX)) {
+        if (user && user.email.includes(VENDOR_DOMAIN) && user.email !== ADMIN_EMAIL) {
             const vendorName = getVendorName(user);
             document.getElementById('vendor-name-display').textContent = vendorName;
             loadVendorCandidates(vendorName);
@@ -151,7 +173,7 @@ auth.onAuthStateChanged(user => {
             document.getElementById('admin-name-display').textContent = 'Admin';
             loadAllCandidates();
             setupAnalyticsListener();
-        } else if (user && user.email.includes(VENDOR_PREFIX)) {
+        } else if (user && user.email.includes(VENDOR_DOMAIN)) {
              // Redirect vendor away if they land here
              window.location.href = 'vendor.html';
         } else {
@@ -280,5 +302,4 @@ async function generatePdf(candidateId) {
     });
 
     doc.save(`Trivanta_Candidate_${data.name.replace(/\s/g, '_')}.pdf`);
-}
-  
+      }
