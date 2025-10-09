@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivanta HR Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Firebase SDK v9+ (Modular) -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDT2e0j-Nvd3weMZaCI7rCb2vJ3DwCdIrk",
+            authDomain: "dazzlohr.firebaseapp.com",
+            projectId: "dazzlohr",
+            storageBucket: "dazzlohr.firebasestorage.app",
+            messagingSenderId: "997294562239",
+            appId: "1:997294562239:web:e49d02aecd7b0aa99b9f0a",
+            measurementId: "G-PCN9GGF3DY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseTimestamp = Timestamp;
+        window.firebaseReady = true;
+
+        async function initDemoData() {
+            try {
+                const vendorsSnapshot = await getDocs(collection(db, 'vendors'));
+                if (vendorsSnapshot.empty) {
+                    await addDoc(collection(db, 'vendors'), {
+                        name: 'Test Vendor Company',
+                        username: 'testvendor',
+                        password: 'password',
+                        createdAt: Timestamp.now()
+                    });
+                    console.log('Demo vendor created');
+                }
+            } catch (error) {
+                console.error('Error initializing demo data:', error);
+            }
+        }
+        initDemoData();
+    </script>
+    
+    <style>
+        :root {
+            --primary-blue: #0052CC;
+            --secondary-blue: #0065FF;
+            --dark-blue: #003D99;
+            --light-blue: #E6F0FF;
+            --text-primary: #172B4D;
+            --text-secondary: #5E6C84;
+            --border-color: #DFE1E6;
+            --background: #FAFBFC;
+            --white: #FFFFFF;
+            --success: #00875A;
+            --warning: #FF991F;
+            --danger: #DE350B;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--primary-blue);
+            letter-spacing: -0.02em;
+        }
+        
+        .navbar-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        .sidebar {
+            background-color: var(--white);
+            border-right: 1px solid var(--border-color);
+            min-height: calc(100vh - 73px);
+            padding: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+            border-left-color: var(--primary-blue);
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 0.75rem;
+        }
+        
+        .main-content {
+            padding: 2rem 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            background-color: var(--white);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: var(--text-primary);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-card {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .login-container {
+            min-height: 100vh;
+            background-color: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .login-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 420px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h2 {
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+        
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-size: 0.9375rem;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px var(--light-blue);
+            outline: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--dark-blue);
+        }
+        
+        .btn-secondary {
+            background-color: var(--text-secondary);
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .table {
+            font-size: 0.9375rem;
+        }
+        
+        .table thead th {
+            background-color: var(--background);
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+            padding: 1rem 0.75rem;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .table tbody td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table tbody tr:hover {
+            background-color: var(--light-blue);
+        }
+        
+        .badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-role {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
+        .badge-status-selected {
+            background-color: #E3FCEF;
+            color: var(--success);
+        }
+        
+        .badge-status-pending {
+            background-color: #FFF0B3;
+            color: #974F0C;
+        }
+        
+        .badge-status-joined {
+            background-color: #E3FCEF;
+            color: var(--success);
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .btn-action {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            margin-right: 0.25rem;
+        }
+        
+        .btn-action:hover {
+            background-color: var(--background);
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert {
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .stats-card {
+                padding: 1rem;
+            }
+            
+            .stats-number {
+                font-size: 2rem;
+            }
+            
+            .table {
+                font-size: 0.8125rem;
+            }
+            
+            .card-header {
+                padding: 1rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .login-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Trivanta HR Manager</h2>
+                <p>Sign in to your account</p>
+            </div>
+            
+            <div id="loginError" class="alert alert-danger hidden">
+                Invalid credentials. Please try again.
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="username" class="form-control" required placeholder="Enter username">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" required placeholder="Enter password">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Portal Type</label>
+                    <select id="userType" class="form-select">
+                        <option value="vendor">Vendor Portal</option>
+                        <option value="admin">Admin Portal</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vendor Portal -->
+    <div id="vendorPortal" class="hidden">
+        <nav class="navbar">
+            <div class="container-fluid">
+                <span class="navbar-brand">
+                    <i class="fas fa-users-cog"></i> Trivanta HR - Vendor Portal
+                </span>
+                <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
+                    <span class="navbar-text me-3">Welcome, <span id="vendorName"></span></span>
+                    <button class="btn btn-outline-primary btn-sm" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-2 col-md-3 sidebar">
+                    <ul class="nav flex-column pt-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showSection('vendorDashboard', event)">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('addCandidate', event)">
+                                <i class="fas fa-user-plus"></i> Add Candidate
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('manageCandidates', event)">
+                                <i class="fas fa-users"></i> Manage Candidates
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-10 col-md-9 main-content">
+                    <div id="vendorDashboard" class="section">
+                        <h1 class="page-title">Dashboard</h1>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="vendorTotalCandidates">0</div>
+                                    <div class="stats-label">Total Candidates</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="vendorSelectedCandidates">0</div>
+                                    <div class="stats-label">Selected Candidates</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="vendorPendingCandidates">0</div>
+                                    <div class="stats-label">Pending Interviews</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="addCandidate" class="section hidden">
+                        <h1 class="page-title">Add New Candidate</h1>
+                        <div id="candidateSuccessAlert" class="alert alert-success hidden"></div>
+                        <div class="card">
+                            <div class="card-body">
+                                <form id="candidateForm">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Full Name</label>
+                                            <input type="text" name="name" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Phone Number</label>
+                                            <input type="tel" name="number" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" name="email" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Role</label>
+                                            <select name="role" class="form-select" required>
+                                                <option value="">Select Role</option>
+                                                <option value="Fitter">Fitter</option>
+                                                <option value="Helper">Helper</option>
+                                                <option value="Site Supervisor">Site Supervisor</option>
+                                                <option value="Welder">Welder</option>
+                                                <option value="Parking Operator">Parking Operator</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Current Salary (₹)</label>
+                                            <input type="number" name="currentSalary" class="form-control" required min="0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Expected Salary (₹)</label>
+                                            <input type="number" name="expectedSalary" class="form-control" required min="0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Total Experience (Years)</label>
+                                            <input type="number" name="totalExperience" class="form-control" step="0.1" required min="0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Relevant Experience (Years)</label>
+                                            <input type="number" name="relevantExperience" class="form-control" step="0.1" required min="0">
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Date of Interview</label>
+                                            <input type="date" name="interviewDate" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="reset" class="btn btn-secondary me-2">Reset</button>
+                                        <button type="submit" class="btn btn-primary">Add Candidate</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="manageCandidates" class="section hidden">
+                        <h1 class="page-title">Manage Candidates</h1>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Role</th>
+                                                <th>Phone</th>
+                                                <th>Expected Salary</th>
+                                                <th>Offered Salary</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vendorCandidatesTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Portal -->
+    <div id="adminPortal" class="hidden">
+        <nav class="navbar">
+            <div class="container-fluid">
+                <span class="navbar-brand">
+                    <i class="fas fa-users-cog"></i> Trivanta HR - Admin Portal
+                </span>
+                <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
+                    <span class="navbar-text me-3">Welcome, Administrator</span>
+                    <button class="btn btn-outline-primary btn-sm" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-2 col-md-3 sidebar">
+                    <ul class="nav flex-column pt-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showSection('adminDashboard', event)">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('allCandidates', event)">
+                                <i class="fas fa-users"></i> All Candidates
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('manageVendors', event)">
+                                <i class="fas fa-building"></i> Manage Vendors
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('vendors', event)">
+                                <i class="fas fa-chart-line"></i> Vendor Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-10 col-md-9 main-content">
+                    <div id="adminDashboard" class="section">
+                        <h1 class="page-title">Dashboard</h1>
+                        <div class="row">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="adminTotalCandidates">0</div>
+                                    <div class="stats-label">Total Candidates</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="adminSelectedCandidates">0</div>
+                                    <div class="stats-label">Selected</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="adminActiveVendors">0</div>
+                                    <div class="stats-label">Active Vendors</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stats-card">
+                                    <div class="stats-number" id="adminPendingInterviews">0</div>
+                                    <div class="stats-label">Pending Interviews</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="allCandidates" class="section hidden">
+                        <h1 class="page-title">All Candidates</h1>
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>Candidate List</span>
+                                <div>
+                                    <select id="vendorFilter" class="form-select form-select-sm d-inline-block w-auto me-2" onchange="loadAllCandidates()">
+                                        <option value="">All Vendors</option>
+                                    </select>
+                                    <select id="roleFilter" class="form-select form-select-sm d-inline-block w-auto" onchange="loadAllCandidates()">
+                                        <option value="">All Roles</option>
+                                        <option value="Fitter">Fitter</option>
+                                        <option value="Helper">Helper</option>
+                                        <option value="Site Supervisor">Site Supervisor</option>
+                                        <option value="Welder">Welder</option>
+                                        <option value="Parking Operator">Parking Operator</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Vendor</th>
+                                                <th>Role</th>
+                                                <th>Phone</th>
+                                                <th>Expected</th>
+                                                <th>Offered</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="adminCandidatesTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="manageVendors" class="section hidden">
+                        <h1 class="page-title">Manage Vendors</h1>
+                        <div id="vendorSuccessAlert" class="alert alert-success hidden"></div>
+                        <div class="card mb-4">
+                            <div class="card-header">Add New Vendor</div>
+                            <div class="card-body">
+                                <form id="addVendorForm">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Vendor Name</label>
+                                            <input type="text" name="vendorName" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Username</label>
+                                            <input type="text" name="vendorUsername" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" name="vendorPassword" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary">Add Vendor</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">All Vendors</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Vendor Name</th>
+                                                <th>Username</th>
+                                                <th>Total Candidates</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manageVendorsTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vendors" class="section hidden">
+                        <h1 class="page-title">Vendor Analytics</h1>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Vendor Name</th>
+                                                <th>Total Candidates</th>
+                                                <th>Selected</th>
+                                                <th>Success Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vendorsTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentUser = null;
+
+        function sanitizeInput(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getStatus(selectionDate, joiningDate) {
+            if (joiningDate) return 'Joined';
+            if (selectionDate) return 'Selected';
+            return 'Interview Pending';
+        }
+
+        function getStatusBadgeClass(status) {
+            const statusMap = {
+                'Joined': 'badge-status-joined',
+                'Selected': 'badge-status-selected',
+                'Interview Pending': 'badge-status-pending'
+            };
+            return statusMap[status] || 'badge-status-pending';
+        }
+
+        function showAlert(elementId, message) {
+            const alert = document.getElementById(elementId);
+            if (alert) {
+                alert.textContent = message;
+                alert.classList.remove('hidden');
+                setTimeout(() => alert.classList.add('hidden'), 3000);
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const userType = document.getElementById('userType').value;
+            
+            document.getElementById('loginError').classList.add('hidden');
+            
+            if (userType === 'admin' && username === 'Siddhant' && password === '102005') {
+                currentUser = { type: 'admin', name: 'Administrator' };
+                showPortal('admin');
+                return;
+            }
+            
+            if (userType === 'vendor') {
+                if (!window.firebaseReady) {
+                    alert('System is loading. Please wait and try again.');
+                    return;
+                }
+                
+                try {
+                    const vendorsRef = window.firebaseCollection(window.firebaseDB, 'vendors');
+                    const q = window.firebaseQuery(vendorsRef, window.firebaseWhere('username', '==', username), window.firebaseWhere('password', '==', password));
+                    const querySnapshot = await window.firebaseGetDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        const vendorDoc = querySnapshot.docs[0];
+                        const vendorData = vendorDoc.data();
+                        currentUser = { 
+                            type: 'vendor', 
+                            id: vendorDoc.id, 
+                            name: vendorData.name
+                        };
+                        document.getElementById('vendorName').textContent = vendorData.name;
+                        showPortal('vendor');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Login failed: ' + error.message);
+                    return;
+                }
+            }
+            
+            document.getElementById('loginError').classList.remove('hidden');
+        }
+
+        function showPortal(type) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            if (type === 'admin') {
+                document.getElementById('adminPortal').classList.remove('hidden');
+                loadAdminDashboard();
+            } else {
+                document.getElementById('vendorPortal').classList.remove('hidden');
+                showSection('vendorDashboard', null);
+                loadVendorDashboard();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminPortal').classList.add('hidden');
+            document.getElementById('vendorPortal').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function showSection(sectionId, event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            if (sectionId === 'allCandidates') {
+                loadAllCandidates();
+            } else if (sectionId === 'manageCandidates') {
+                loadVendorCandidates();
+            } else if (sectionId === 'vendors') {
+                loadVendorsTable();
+            } else if (sectionId === 'manageVendors') {
+                loadManageVendorsTable();
+            }
+        }
+
+        async function loadVendorDashboard() {
+            try {
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const q = window.firebaseQuery(candidatesRef, window.firebaseWhere('vendorId', '==', currentUser.id));
+                const querySnapshot = await window.firebaseGetDocs(q);
+                
+                const candidates = [];
+                querySnapshot.forEach((doc) => {
+                    candidates.push({ id: doc.id, ...doc.data() });
+                });
+                
+                const selectedCount = candidates.filter(c => c.status === 'Selected' || c.status === 'Joined').length;
+                const pendingCount = candidates.filter(c => c.status === 'Interview Pending').length;
+                
+                document.getElementById('vendorTotalCandidates').textContent = candidates.length;
+                document.getElementById('vendorSelectedCandidates').textContent = selectedCount;
+                document.getElementById('vendorPendingCandidates').textContent = pendingCount;
+            } catch (error) {
+                console.error('Error loading vendor dashboard:', error);
+            }
+        }
+
+        async function loadAdminDashboard() {
+            try {
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const candidatesSnapshot = await window.firebaseGetDocs(candidatesRef);
+                
+                const candidates = [];
+                candidatesSnapshot.forEach((doc) => {
+                    candidates.push({ id: doc.id, ...doc.data() });
+                });
+                
+                const selectedCount = candidates.filter(c => c.status === 'Selected' || c.status === 'Joined').length;
+                const pendingCount = candidates.filter(c => c.status === 'Interview Pending').length;
+                const uniqueVendors = new Set(candidates.map(c => c.vendorId));
+                
+                document.getElementById('adminTotalCandidates').textContent = candidates.length;
+                document.getElementById('adminSelectedCandidates').textContent = selectedCount;
+                document.getElementById('adminActiveVendors').textContent = uniqueVendors.size;
+                document.getElementById('adminPendingInterviews').textContent = pendingCount;
+                
+                const vendorFilter = document.getElementById('vendorFilter');
+                vendorFilter.innerHTML = '<option value="">All Vendors</option>';
+                const vendorNames = [...new Set(candidates.map(c => c.vendorName))];
+                vendorNames.forEach(vendor => {
+                    vendorFilter.innerHTML += '<option value="' + sanitizeInput(vendor) + '">' + sanitizeInput(vendor) + '</option>';
+                });
+            } catch (error) {
+                console.error('Error loading admin dashboard:', error);
+            }
+        }
+
+        async function loadVendorCandidates() {
+            try {
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const q = window.firebaseQuery(candidatesRef, window.firebaseWhere('vendorId', '==', currentUser.id));
+                const querySnapshot = await window.firebaseGetDocs(q);
+                
+                const candidates = [];
+                querySnapshot.forEach((doc) => {
+                    candidates.push({ id: doc.id, ...doc.data() });
+                });
+                
+                candidates.sort((a, b) => {
+                    const aTime = a.createdAt?.seconds || 0;
+                    const bTime = b.createdAt?.seconds || 0;
+                    return bTime - aTime;
+                });
+                
+                const tableBody = document.getElementById('vendorCandidatesTable');
+                
+                if (candidates.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No candidates found</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = candidates.map(candidate => 
+                    '<tr>' +
+                    '<td><strong>' + sanitizeInput(candidate.name) + '</strong></td>' +
+                    '<td><span class="badge badge-role">' + sanitizeInput(candidate.role) + '</span></td>' +
+                    '<td>' + sanitizeInput(candidate.number) + '</td>' +
+                    '<td>₹' + candidate.expectedSalary.toLocaleString() + '</td>' +
+                    '<td>' + (candidate.offeredSalary ? '₹' + candidate.offeredSalary.toLocaleString() : '<span class="text-muted">Not Set</span>') + '</td>' +
+                    '<td><span class="badge ' + getStatusBadgeClass(candidate.status) + '">' + sanitizeInput(candidate.status) + '</span></td>' +
+                    '<td>' +
+                    '<button class="btn btn-action btn-sm" onclick="downloadCandidatePDF(\'' + candidate.id + '\')" title="Download PDF">' +
+                    '<i class="fas fa-download"></i>' +
+                    '</button>' +
+                    '</td>' +
+                    '</tr>'
+                ).join('');
+            } catch (error) {
+                console.error('Error loading vendor candidates:', error);
+                document.getElementById('vendorCandidatesTable').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading candidates</td></tr>';
+            }
+        }
+
+        async function loadAllCandidates() {
+            try {
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const querySnapshot = await window.firebaseGetDocs(candidatesRef);
+                
+                let candidates = [];
+                querySnapshot.forEach((doc) => {
+                    candidates.push({ id: doc.id, ...doc.data() });
+                });
+                
+                candidates.sort((a, b) => {
+                    const aTime = a.createdAt?.seconds || 0;
+                    const bTime = b.createdAt?.seconds || 0;
+                    return bTime - aTime;
+                });
+                
+                const vendorFilter = document.getElementById('vendorFilter').value;
+                const roleFilter = document.getElementById('roleFilter').value;
+                
+                if (vendorFilter) {
+                    candidates = candidates.filter(c => c.vendorName === vendorFilter);
+                }
+                if (roleFilter) {
+                    candidates = candidates.filter(c => c.role === roleFilter);
+                }
+                
+                const tableBody = document.getElementById('adminCandidatesTable');
+                
+                if (candidates.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No candidates found</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = candidates.map(candidate => 
+                    '<tr>' +
+                    '<td><strong>' + sanitizeInput(candidate.name) + '</strong></td>' +
+                    '<td>' + sanitizeInput(candidate.vendorName) + '</td>' +
+                    '<td><span class="badge badge-role">' + sanitizeInput(candidate.role) + '</span></td>' +
+                    '<td>' + sanitizeInput(candidate.number) + '</td>' +
+                    '<td>₹' + candidate.expectedSalary.toLocaleString() + '</td>' +
+                    '<td>' + (candidate.offeredSalary ? '₹' + candidate.offeredSalary.toLocaleString() : '<span class="text-muted">Not Set</span>') + '</td>' +
+                    '<td><span class="badge ' + getStatusBadgeClass(candidate.status) + '">' + sanitizeInput(candidate.status) + '</span></td>' +
+                    '<td>' +
+                    '<button class="btn btn-action btn-sm" onclick="editCandidateAdmin(\'' + candidate.id + '\')" title="Edit">' +
+                    '<i class="fas fa-edit"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-action btn-sm" onclick="downloadCandidatePDF(\'' + candidate.id + '\')" title="Download PDF">' +
+                    '<i class="fas fa-download"></i>' +
+                    '</button>' +
+                    '</td>' +
+                    '</tr>'
+                ).join('');
+            } catch (error) {
+                console.error('Error loading all candidates:', error);
+                document.getElementById('adminCandidatesTable').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading candidates</td></tr>';
+            }
+        }
+
+        async function downloadCandidatePDF(candidateId) {
+            try {
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const querySnapshot = await window.firebaseGetDocs(candidatesRef);
+                let candidate = null;
+                
+                querySnapshot.forEach((doc) => {
+                    if (doc.id === candidateId) {
+                        candidate = { id: doc.id, ...doc.data() };
+                    }
+                });
+                
+                if (!candidate) return;
+                
+                const jsPDF = window.jspdf.jsPDF;
+                const pdf = new jsPDF();
+                
+                pdf.setFontSize(20);
+                pdf.setTextColor(0, 82, 204);
+                pdf.text('Trivanta HR Manager', 20, 25);
+                
+                pdf.setFontSize(14);
+                pdf.setTextColor(23, 43, 77);
+                pdf.text('Candidate Profile', 20, 35);
+                
+                const tableData = [
+                    ['Field', 'Value'],
+                    ['Full Name', candidate.name],
+                    ['Phone Number', candidate.number],
+                    ['Email', candidate.email],
+                    ['Role', candidate.role],
+                    ['Current Salary', '₹' + candidate.currentSalary.toLocaleString()],
+                    ['Expected Salary', '₹' + candidate.expectedSalary.toLocaleString()],
+                    ['Offered Salary', candidate.offeredSalary ? '₹' + candidate.offeredSalary.toLocaleString() : 'Not Set'],
+                    ['Total Experience', candidate.totalExperience + ' Years'],
+                    ['Relevant Experience', candidate.relevantExperience + ' Years'],
+                    ['Interview Date', candidate.interviewDate || 'Not Scheduled'],
+                    ['Selection Date', candidate.selectionDate || 'Not Selected'],
+                    ['Joining Date', candidate.joiningDate || 'Not Joined'],
+                    ['Status', candidate.status],
+                    ['Vendor Name', candidate.vendorName]
+                ];
+                
+                pdf.autoTable({
+                    head: [tableData[0]],
+                    body: tableData.slice(1),
+                    startY: 45,
+                    styles: { fontSize: 10, cellPadding: 5 },
+                    headStyles: { fillColor: [0, 82, 204], textColor: 255 },
+                    alternateRowStyles: { fillColor: [250, 251, 252] }
+                });
+                
+                const pageHeight = pdf.internal.pageSize.height;
+                pdf.setFontSize(8);
+                pdf.setTextColor(128, 128, 128);
+                pdf.text('Generated by Trivanta HR Manager', 20, pageHeight - 10);
+                pdf.text('Generated on: ' + new Date().toLocaleDateString(), 20, pageHeight - 5);
+                
+                pdf.save(candidate.name.replace(/[^a-z0-9]/gi, '_') + '_Profile.pdf');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+        }
+
+        async function loadManageVendorsTable() {
+            try {
+                const vendorsRef = window.firebaseCollection(window.firebaseDB, 'vendors');
+                const vendorsSnapshot = await window.firebaseGetDocs(vendorsRef);
+                
+                const vendors = [];
+                vendorsSnapshot.forEach((doc) => {
+                    vendors.push({ id: doc.id, ...doc.data() });
+                });
+                
+                vendors.sort((a, b) => {
+                    const aTime = a.createdAt?.seconds || 0;
+                    const bTime = b.createdAt?.seconds || 0;
+                    return bTime - aTime;
+                });
+                
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const candidatesSnapshot = await window.firebaseGetDocs(candidatesRef);
+                const candidateCounts = {};
+                
+                candidatesSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    candidateCounts[data.vendorId] = (candidateCounts[data.vendorId] || 0) + 1;
+                });
+                
+                const tableBody = document.getElementById('manageVendorsTable');
+                
+                if (vendors.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No vendors found. Add your first vendor above.</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = vendors.map(vendor => 
+                    '<tr>' +
+                    '<td><strong>' + sanitizeInput(vendor.name) + '</strong></td>' +
+                    '<td>' + sanitizeInput(vendor.username) + '</td>' +
+                    '<td><span class="badge badge-role">' + (candidateCounts[vendor.id] || 0) + '</span></td>' +
+                    '<td>' +
+                    '<button class="btn btn-action btn-sm" onclick="deleteVendor(\'' + vendor.id + '\')" title="Delete">' +
+                    '<i class="fas fa-trash"></i>' +
+                    '</button>' +
+                    '</td>' +
+                    '</tr>'
+                ).join('');
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+                document.getElementById('manageVendorsTable').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading vendors</td></tr>';
+            }
+        }
+
+        async function deleteVendor(vendorId) {
+            if (confirm('Are you sure you want to delete this vendor?')) {
+                try {
+                    await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'vendors', vendorId));
+                    await loadManageVendorsTable();
+                    showAlert('vendorSuccessAlert', 'Vendor deleted successfully!');
+                } catch (error) {
+                    console.error('Error deleting vendor:', error);
+                    alert('Error deleting vendor. Please try again.');
+                }
+            }
+        }
+
+        async function loadVendorsTable() {
+            try {
+                const vendorsRef = window.firebaseCollection(window.firebaseDB, 'vendors');
+                const vendorsSnapshot = await window.firebaseGetDocs(vendorsRef);
+                
+                const vendors = [];
+                vendorsSnapshot.forEach((doc) => {
+                    vendors.push({ id: doc.id, ...doc.data() });
+                });
+                
+                const candidatesRef = window.firebaseCollection(window.firebaseDB, 'candidates');
+                const candidatesSnapshot = await window.firebaseGetDocs(candidatesRef);
+                
+                const vendorStats = vendors.map(vendor => {
+                    const vendorCandidates = [];
+                    candidatesSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data.vendorId === vendor.id) {
+                            vendorCandidates.push(data);
+                        }
+                    });
+                    
+                    const selected = vendorCandidates.filter(c => c.status === 'Selected' || c.status === 'Joined').length;
+                    const successRate = vendorCandidates.length > 0 ? ((selected / vendorCandidates.length) * 100).toFixed(1) : '0';
+                    
+                    return {
+                        name: vendor.name,
+                        total: vendorCandidates.length,
+                        selected: selected,
+                        successRate: successRate
+                    };
+                });
+                
+                const tableBody = document.getElementById('vendorsTable');
+                
+                if (vendorStats.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No vendor data available</td></tr>';
+                    return;
+                }
+                
+                tableBody.innerHTML = vendorStats.map(vendor => 
+                    '<tr>' +
+                    '<td><strong>' + sanitizeInput(vendor.name) + '</strong></td>' +
+                    '<td><span class="badge badge-role">' + vendor.total + '</span></td>' +
+                    '<td><span class="badge badge-status-selected">' + vendor.selected + '</span></td>' +
+                    '<td>' + vendor.successRate + '%</td>' +
+                    '</tr>'
+                ).join('');
+            } catch (error) {
+                console.error('Error loading vendor analytics:', error);
+                document.getElementById('vendorsTable').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading analytics</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            document.getElementById('candidateForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const currentSalary = parseInt(formData.get('currentSalary'));
+                const expectedSalary = parseInt(formData.get('expectedSalary'));
+                
+                const candidate = {
+                    vendorId: currentUser.id,
+                    vendorName: currentUser.name,
+                    name: formData.get('name').trim(),
+                    number: formData.get('number').trim(),
+                    email: formData.get('email').trim(),
+                    role: formData.get('role'),
+                    currentSalary: currentSalary,
+                    expectedSalary: expectedSalary,
+                    offeredSalary: null,
+                    totalExperience: parseFloat(formData.get('totalExperience')),
+                    relevantExperience: parseFloat(formData.get('relevantExperience')),
+                    interviewDate: formData.get('interviewDate') || null,
+                    selectionDate: null,
+                    joiningDate: null,
+                    status: 'Interview Pending',
+                    createdAt: window.firebaseTimestamp.now()
+                };
+                
+                try {
+                    await window.firebaseAddDoc(window.firebaseCollection(window.firebaseDB, 'candidates'), candidate);
+                    showAlert('candidateSuccessAlert', 'Candidate added successfully!');
+                    this.reset();
+                    await loadVendorDashboard();
+                } catch (error) {
+                    console.error('Error adding candidate:', error);
+                    alert('Error adding candidate. Please try again.');
+                }
+            });
+            
+            document.getElementById('addVendorForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const username = formData.get('vendorUsername').trim();
+                
+                try {
+                    const vendorsRef = window.firebaseCollection(window.firebaseDB, 'vendors');
+                    const q = window.firebaseQuery(vendorsRef, window.firebaseWhere('username', '==', username));
+                    const querySnapshot = await window.firebaseGetDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        alert('Username already exists. Please choose a different username.');
+                        return;
+                    }
+                    
+                    const vendor = {
+                        name: formData.get('vendorName').trim(),
+                        username: username,
+                        password: formData.get('vendorPassword').trim(),
+                        createdAt: window.firebaseTimestamp.now()
+                    };
+                    
+                    await window.firebaseAddDoc(window.firebaseCollection(window.firebaseDB, 'vendors'), vendor);
+                    showAlert('vendorSuccessAlert', 'Vendor added successfully!');
+                    this.reset();
+                    await loadManageVendorsTable();
+                    await loadAdminDashboard();
+                } catch (error) {
+                    console.error('Error adding vendor:', error);
+                    alert('Error adding vendor. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
